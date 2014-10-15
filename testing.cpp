@@ -17,56 +17,33 @@ int S_MAX = 256;
 int V_MIN = 0;
 int V_MAX = 256;
 
-void on_trackbar( int, void* ){
-	
-}
+gpu::GpuMat gpuMorphOps(gpu::GpuMat &thresh){
 
-void createTrackbarsWindow(){
-	namedWindow(trackbarWindowName,0);
-	
-	char TrackbarName[50];
-	
-	/*
-	sprintf( TrackbarName, "H_MIN", H_MIN);
-	sprintf( TrackbarName, "H_MAX", H_MAX);
-	sprintf( TrackbarName, "S_MIN", S_MIN);
-	sprintf( TrackbarName, "S_MAX", S_MAX);
-	sprintf( TrackbarName, "V_MIN", V_MIN);
-	sprintf( TrackbarName, "V_MAX", V_MAX);
-	*/
-
-	createTrackbar( "H_MIN", trackbarWindowName, &H_MIN, H_MAX, on_trackbar);
-	createTrackbar( "H_MAX", trackbarWindowName, &H_MAX, H_MAX, on_trackbar);
-	createTrackbar( "S_MIN", trackbarWindowName, &S_MIN, S_MAX, on_trackbar);
-	createTrackbar( "S_MAX", trackbarWindowName, &S_MAX, S_MAX, on_trackbar);
-	createTrackbar( "V_MIN", trackbarWindowName, &V_MIN, V_MAX, on_trackbar);
-	createTrackbar( "V_MAX", trackbarWindowName, &V_MAX, V_MAX, on_trackbar);
-}
-
-void gpuMorphOps(gpu::GpuMat &thresh){
-
+	gpu::GpuMat tempMat1, tempMat2;
 	//create structuring element that will be used to "dilate" and "erode" image.
 	//the element chosen here is a 3px by 3px rectangle
 
 	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
 	//dilate with larger element so make sure object is nicely visible
-	Mat dilateElement = getStructuringElement( MORPH_ELLIPSE,Size(12,12));
-
-	//gpu::erode(thresh,thresh,erodeElement);
-	//gpu::erode(thresh,thresh,erodeElement);
+	Mat dilateElement = getStructuringElement( MORPH_ELLIPSE,Size(10,10));
+	gpu::erode(thresh,tempMat1,erodeElement);
+	gpu::erode(tempMat1,tempMat2,erodeElement);
 	//you have to comment these back in for it to work
-	//gpu::dilate(thresh,thresh,dilateElement);
-	//gpu::dilate(thresh,thresh,dilateElement);
+	gpu::dilate(tempMat2,tempMat1,dilateElement);
+	gpu::dilate(tempMat1,tempMat2,dilateElement);
 
+	gpu::threshold(tempMat2, tempMat1, 20, 255, THRESH_BINARY);
+
+	return tempMat1;
 }
 void morphOps(Mat &thresh){
 
 	//create structuring element that will be used to "dilate" and "erode" image.
 	//the element chosen here is a 3px by 3px rectangle
 
-	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
+	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(5,5));
 	//dilate with larger element so make sure object is nicely visible
-	Mat dilateElement = getStructuringElement( MORPH_ELLIPSE,Size(12,12));
+	Mat dilateElement = getStructuringElement( MORPH_ELLIPSE,Size(14,14));
 
 	erode(thresh,thresh,erodeElement);
 	erode(thresh,thresh,erodeElement);
@@ -105,15 +82,14 @@ void GPUprocess(VideoCapture cap){
 	gpu::add(channels[0],channels[1],gpuTemp);
 	gpu::subtract(channels[2],gpuTemp,gpuFrame);
 	//gpuOut.upload(out);
-	displayGPUImage("GPU out", gpuFrame);
-	gpuMorphOps(gpuFrame);
-	displayGPUImage("GPU out after circles", gpuFrame);
+	//displayGPUImage("GPU out", gpuFrame);
+	gpuFrame = gpuMorphOps(gpuFrame);
+	//displayGPUImage("GPU out after circles", gpuFrame);
 
-
-
+	pyrDown(frame, frame);
 	gpu::GpuMat gpuCircles;
 	vector<Vec3f> cpuCircles;
-	gpu::HoughCircles(gpuFrame, gpuCircles, CV_HOUGH_GRADIENT, 1, frame.rows/20, 20, 10, 1, frame.rows/10);
+	gpu::HoughCircles(gpuFrame, gpuCircles, CV_HOUGH_GRADIENT, 1, frame.rows/20, 20, 13, 1, frame.rows/10);
 	gpu::HoughCirclesDownload(gpuCircles,cpuCircles);
 	for( size_t i = 0; i < cpuCircles.size(); i++ )
 	{
@@ -124,7 +100,7 @@ void GPUprocess(VideoCapture cap){
 		// draw the circle outline
 		circle( frame, center, radius, Scalar(0,128,128), 3, 8, 0 );
 	}
-
+		
 	//GaussianBlur( frame, out, Size(5,5), 3, 3);
 	//imshow("output", gray); //show the frame in "MyVideo" window
 	//imshow("output",temp ); //show the frame in "MyVideo" window
@@ -146,7 +122,7 @@ int main(int argc, char* argv[])
          return -1;
     }
 
-		createTrackbarsWindow();
+		//createTrackbarsWindow();
 
 		//double dWidth = cap.get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
 		//double dHeight = cap.get(CV_CAP_PROP_FRAME_HEIGHT); //get the height of frames of the video

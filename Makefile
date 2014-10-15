@@ -114,29 +114,29 @@ testing/fast:
 	$(MAKE) -f CMakeFiles/testing.dir/build.make CMakeFiles/testing.dir/build
 .PHONY : testing/fast
 
-testing.o: testing.cpp.o
-.PHONY : testing.o
+gpuTesting.o: gpuTesting.cpp.o
+.PHONY : gpuTesting.o
 
 # target to build an object file
-testing.cpp.o:
-	$(MAKE) -f CMakeFiles/testing.dir/build.make CMakeFiles/testing.dir/testing.cpp.o
-.PHONY : testing.cpp.o
+gpuTesting.cpp.o:
+	$(MAKE) -f CMakeFiles/testing.dir/build.make CMakeFiles/testing.dir/gpuTesting.cpp.o
+.PHONY : gpuTesting.cpp.o
 
-testing.i: testing.cpp.i
-.PHONY : testing.i
+gpuTesting.i: gpuTesting.cpp.i
+.PHONY : gpuTesting.i
 
 # target to preprocess a source file
-testing.cpp.i:
-	$(MAKE) -f CMakeFiles/testing.dir/build.make CMakeFiles/testing.dir/testing.cpp.i
-.PHONY : testing.cpp.i
+gpuTesting.cpp.i:
+	$(MAKE) -f CMakeFiles/testing.dir/build.make CMakeFiles/testing.dir/gpuTesting.cpp.i
+.PHONY : gpuTesting.cpp.i
 
-testing.s: testing.cpp.s
-.PHONY : testing.s
+gpuTesting.s: gpuTesting.cpp.s
+.PHONY : gpuTesting.s
 
 # target to generate assembly for a file
-testing.cpp.s:
-	$(MAKE) -f CMakeFiles/testing.dir/build.make CMakeFiles/testing.dir/testing.cpp.s
-.PHONY : testing.cpp.s
+gpuTesting.cpp.s:
+	$(MAKE) -f CMakeFiles/testing.dir/build.make CMakeFiles/testing.dir/gpuTesting.cpp.s
+.PHONY : gpuTesting.cpp.s
 
 # Help Target
 help:
@@ -147,9 +147,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... testing"
-	@echo "... testing.o"
-	@echo "... testing.i"
-	@echo "... testing.s"
+	@echo "... gpuTesting.o"
+	@echo "... gpuTesting.i"
+	@echo "... gpuTesting.s"
 .PHONY : help
 
 

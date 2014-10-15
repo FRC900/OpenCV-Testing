@@ -52,37 +52,37 @@ include CMakeFiles/testing.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/testing.dir/flags.make
 
-CMakeFiles/testing.dir/testing.cpp.o: CMakeFiles/testing.dir/flags.make
-CMakeFiles/testing.dir/testing.cpp.o: testing.cpp
+CMakeFiles/testing.dir/gpuTesting.cpp.o: CMakeFiles/testing.dir/flags.make
+CMakeFiles/testing.dir/gpuTesting.cpp.o: gpuTesting.cpp
 	$(CMAKE_COMMAND) -E cmake_progress_report /home/ubuntu/900_opencv/testing/CMakeFiles $(CMAKE_PROGRESS_1)
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/testing.dir/testing.cpp.o"
-	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/testing.dir/testing.cpp.o -c /home/ubuntu/900_opencv/testing/testing.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/testing.dir/gpuTesting.cpp.o"
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/testing.dir/gpuTesting.cpp.o -c /home/ubuntu/900_opencv/testing/gpuTesting.cpp
 
-CMakeFiles/testing.dir/testing.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/testing.dir/testing.cpp.i"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/ubuntu/900_opencv/testing/testing.cpp > CMakeFiles/testing.dir/testing.cpp.i
+CMakeFiles/testing.dir/gpuTesting.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/testing.dir/gpuTesting.cpp.i"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/ubuntu/900_opencv/testing/gpuTesting.cpp > CMakeFiles/testing.dir/gpuTesting.cpp.i
 
-CMakeFiles/testing.dir/testing.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/testing.dir/testing.cpp.s"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/ubuntu/900_opencv/testing/testing.cpp -o CMakeFiles/testing.dir/testing.cpp.s
+CMakeFiles/testing.dir/gpuTesting.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/testing.dir/gpuTesting.cpp.s"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/ubuntu/900_opencv/testing/gpuTesting.cpp -o CMakeFiles/testing.dir/gpuTesting.cpp.s
 
-CMakeFiles/testing.dir/testing.cpp.o.requires:
-.PHONY : CMakeFiles/testing.dir/testing.cpp.o.requires
+CMakeFiles/testing.dir/gpuTesting.cpp.o.requires:
+.PHONY : CMakeFiles/testing.dir/gpuTesting.cpp.o.requires
 
-CMakeFiles/testing.dir/testing.cpp.o.provides: CMakeFiles/testing.dir/testing.cpp.o.requires
-	$(MAKE) -f CMakeFiles/testing.dir/build.make CMakeFiles/testing.dir/testing.cpp.o.provides.build
-.PHONY : CMakeFiles/testing.dir/testing.cpp.o.provides
+CMakeFiles/testing.dir/gpuTesting.cpp.o.provides: CMakeFiles/testing.dir/gpuTesting.cpp.o.requires
+	$(MAKE) -f CMakeFiles/testing.dir/build.make CMakeFiles/testing.dir/gpuTesting.cpp.o.provides.build
+.PHONY : CMakeFiles/testing.dir/gpuTesting.cpp.o.provides
 
-CMakeFiles/testing.dir/testing.cpp.o.provides.build: CMakeFiles/testing.dir/testing.cpp.o
+CMakeFiles/testing.dir/gpuTesting.cpp.o.provides.build: CMakeFiles/testing.dir/gpuTesting.cpp.o
 
 # Object files for target testing
 testing_OBJECTS = \
-"CMakeFiles/testing.dir/testing.cpp.o"
+"CMakeFiles/testing.dir/gpuTesting.cpp.o"
 
 # External object files for target testing
 testing_EXTERNAL_OBJECTS =
 
-testing: CMakeFiles/testing.dir/testing.cpp.o
+testing: CMakeFiles/testing.dir/gpuTesting.cpp.o
 testing: CMakeFiles/testing.dir/build.make
 testing: /usr/local/lib/libopencv_videostab.so.2.4.9
 testing: /usr/local/lib/libopencv_video.so.2.4.9
@@ -125,7 +125,7 @@ testing: CMakeFiles/testing.dir/link.txt
 CMakeFiles/testing.dir/build: testing
 .PHONY : CMakeFiles/testing.dir/build
 
-CMakeFiles/testing.dir/requires: CMakeFiles/testing.dir/testing.cpp.o.requires
+CMakeFiles/testing.dir/requires: CMakeFiles/testing.dir/gpuTesting.cpp.o.requires
 .PHONY : CMakeFiles/testing.dir/requires
 
 CMakeFiles/testing.dir/clean:
