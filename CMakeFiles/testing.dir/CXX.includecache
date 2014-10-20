@@ -7,12 +7,12 @@
 #IncludeRegexTransform: 
 
 /home/ubuntu/900_opencv/testing/gpuTesting.cpp
-opencv2/highgui/highgui.hpp
-/home/ubuntu/900_opencv/testing/opencv2/highgui/highgui.hpp
-opencv2/gpu/gpu.hpp
-/home/ubuntu/900_opencv/testing/opencv2/gpu/gpu.hpp
-opencv2/opencv.hpp
-/home/ubuntu/900_opencv/testing/opencv2/opencv.hpp
+/usr/local/include/opencv2/gpu/gpu.hpp
+-
+/usr/local/include/opencv2/opencv.hpp
+-
+/usr/local/include/opencv2/highgui/highgui.hpp
+-
 iostream
 -
 stdio.h
@@ -20,6 +20,18 @@ stdio.h
 sstream
 -
 string
+-
+stdlib.h
+-
+unistd.h
+-
+fcntl.h
+-
+sys/types.h
+-
+sys/socket.h
+-
+netinet/in.h
 -
 
 /usr/local/include/opencv2/calib3d/calib3d.hpp
