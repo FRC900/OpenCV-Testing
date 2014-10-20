@@ -381,7 +381,7 @@ createTrackbar("hough threshold","adjustments", &houghThreshold, 20); //threshol
                      */
 		    vector<Vec3f> xAndY;
 		    displayCircles(inputVideo, xAndY);
-err << XAndY.size() << endl;
+cerr << XAndY.size() << endl;
                     fill_buffer(buffer  , unsigned(cvRound(xAndY[0][0])));
                     fill_buffer(buffer+4, unsigned(cvRound(xAndY[0][1])));
                     fill_buffer(buffer+8, unsigned(cvRound(xAndY[0][2])));
