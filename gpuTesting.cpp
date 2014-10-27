@@ -7,6 +7,8 @@
 #include <string>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
+#include <math.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -24,6 +26,7 @@ double addWeightGreen = addWeightIntGreen / 10;
 int deRepeat = 1;
 int houghThreshold = 10;
 int radius = 1;
+int counter = 0;
 
 void dilateAndErode(Mat &input, int dilateSizeFunc, int erodeSizeFunc, int deRepeatFunc); //prototype this function so that it can be called in cpuProcess
 void gpuDilateAndErode(gpu::GpuMat &input, int dilateSizeFunc, int erodeSizeFunc, int deRepeatFunc); //prototype this one too
@@ -70,12 +73,12 @@ void cpuProcess(Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){ //
 
 }
 
-
+class gpuClass{
+public: 
 void gpuProcess( Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){
 	Mat displayImageCPU; //create this for showing the filtered image
-	gpu::GpuMat gpuInFrame, gpuOutFrame,BlueAndGreen; //create gpu matricies to store the image
 	gpuInFrame.upload(inProcess); //upload frame to GPU
-	vector <gpu::GpuMat> RGBchannels; //create vector of gpu matricies to store RGB channels
+
 	gpu::split(gpuInFrame, RGBchannels); //split image into 3 channels
 	addWeightBlue = addWeightIntBlue / 10; //take value from slider and convert to double
 	addWeightGreen = addWeightIntGreen / 10;
@@ -85,7 +88,7 @@ void gpuProcess( Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){
 	gpuOutFrame.download(displayImageCPU);
 	imshow("filtered image", displayImageCPU); //show filtered image
 	waitKey(5);
-	gpu::GpuMat gpuCirclesData; //create gpu matrix for cirlces data
+
 	vector<Vec3f> cpuCirclesData; //create cpu matrix for circles data
 	gpu::HoughCircles(gpuOutFrame, gpuCirclesData, CV_HOUGH_GRADIENT,1, 200, 100, 10, 1, 20); //run houghCircles on gpu
 	gpu::HoughCirclesDownload(gpuCirclesData,cpuCirclesData); //download houghcirlces data to cpu
@@ -97,6 +100,7 @@ void gpuProcess( Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){
 		circle( outProcess, center, 3, Scalar(0,128,128), -1, 8, 0 );
 		// draw the circle outline
 		circle( outProcess, center, radius, Scalar(0,128,128), 3, 8, 0 );
+		
 	}
 
 	//GaussianBlur( frame, out, Size(5,5), 3, 3);
@@ -105,7 +109,12 @@ void gpuProcess( Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){
 
 	circlesData = cpuCirclesData;
 }
+private:
+gpu::GpuMat gpuInFrame, gpuOutFrame,BlueAndGreen; //create gpu matricies to store the image
+	gpu::GpuMat gpuCirclesData; //create gpu matrix for cirlces data
+	vector <gpu::GpuMat> RGBchannels; //create vector of gpu matricies to store RGB channels
 
+};
 
 
 void dilateAndErode(Mat &input, int dilateSizeFunc, int erodeSizeFunc, int deRepeatFunc){
@@ -132,7 +141,8 @@ void gpuDilateAndErode(gpu::GpuMat &input, int dilateSizeFunc, int erodeSizeFunc
 	}
 }
 
-void displayCircles(VideoCapture inputVideo, vector<Vec3f> &circlesData){
+void displayCircles(VideoCapture inputVideo, vector<Vec3f> &circlesData,gpuClass &g){
+	clock_t start = clock();
 	Mat inputFrame, outputFrame; //creating variables to store image
 	bool frameIsRead = inputVideo.read(inputFrame); //reads a frame from video and stores boolean value if read correctly
 	if (!frameIsRead) //check if frame was read
@@ -142,16 +152,27 @@ void displayCircles(VideoCapture inputVideo, vector<Vec3f> &circlesData){
 
 	pyrDown(inputFrame,inputFrame ); //scale image down, makes it easier to process
 	outputFrame = inputFrame; // make a copy for output
+	counter++;
 	if(gpu::getCudaEnabledDeviceCount() != 0){ //checks if a CUDA device is availible
-		gpuProcess(inputFrame, outputFrame, circlesData); // calls for the GPU to process the frame
+		g.gpuProcess(inputFrame, outputFrame, circlesData); // calls for the GPU to process the frame
 	}else{
 		cpuProcess(inputFrame, outputFrame, circlesData); //calls for the CPU to process the frame
 	}
 	//convert to RGB before displaying output
 	imshow("final image", outputFrame);
+	clock_t t = clock() - start;
+	double secondT = (float(t))/CLOCKS_PER_SEC;
+	cout << secondT << endl;
 }
 
-
+void framesPerSecond(int counter, clock_t startTime)
+{
+	clock_t t;
+	t = clock() - startTime;
+	double secondT = (float(t))/CLOCKS_PER_SEC;
+	double framesPerSec = counter/secondT;
+	cout << framesPerSec << endl;
+}
 
 //Point of no return
 
@@ -262,7 +283,7 @@ int main(int argc, char *argv[])
 	ssize_t rc;
 	int stop_server = 0;
 	int close_connection = 0;
-
+	gpuClass g;
 	int dilateSize = 1;
 	//open the video
 	VideoCapture inputVideo("juggle.mov");
@@ -358,7 +379,9 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				cerr << "Received " << hex << (unsigned int)buffer[0] << " " << (unsigned int)buffer[1] << " " << (unsigned int)buffer[2] << " " << (unsigned int)buffer[3] << endl;
+				//framesPerSecond(counter, start);
+				//cout << "Number of frames: " << counter << endl;
+			//FOR NOW	cerr << "Received " << hex << (unsigned int)buffer[0] << " " << (unsigned int)buffer[1] << " " << (unsigned int)buffer[2] << " " << (unsigned int)buffer[3] << endl;
 				if (buffer[3] == 0)
 				{
 					/* Orderly disconnect. Close the connection then loop back and
@@ -384,8 +407,8 @@ int main(int argc, char *argv[])
 					* constantly replace it with newer values.
 					*/
 					vector<Vec3f> xAndY;
-					displayCircles(inputVideo, xAndY);
-					cerr << xAndY.size() << endl;
+					displayCircles(inputVideo, xAndY, g);
+					//FOR NOW cerr << xAndY.size() << endl;
 					for(int i = 0; i < xAndY.size(); i++){ 
 						fill_buffer(buffer  , unsigned(cvRound(xAndY[i][0])));
 						fill_buffer(buffer+4, unsigned(cvRound(xAndY[i][1])));

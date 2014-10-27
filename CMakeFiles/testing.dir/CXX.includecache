@@ -25,6 +25,10 @@ stdlib.h
 -
 unistd.h
 -
+time.h
+-
+math.h
+-
 fcntl.h
 -
 sys/types.h
