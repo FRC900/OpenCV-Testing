@@ -1,0 +1,40 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/ubuntu/900_opencv/frisbeelocating/frisbeelocating.cpp
+opencv2/gpu/gpu.hpp
+/home/ubuntu/900_opencv/frisbeelocating/opencv2/gpu/gpu.hpp
+opencv2/opencv.hpp
+/home/ubuntu/900_opencv/frisbeelocating/opencv2/opencv.hpp
+opencv2/highgui/highgui.hpp
+/home/ubuntu/900_opencv/frisbeelocating/opencv2/highgui/highgui.hpp
+iostream
+-
+stdio.h
+-
+sstream
+-
+string
+-
+stdlib.h
+-
+unistd.h
+-
+time.h
+-
+math.h
+-
+fcntl.h
+-
+sys/types.h
+-
+sys/socket.h
+-
+netinet/in.h
+-
+
