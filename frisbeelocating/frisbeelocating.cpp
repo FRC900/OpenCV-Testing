@@ -33,25 +33,28 @@ double actualContrast = 0;
 int trackbarContrast = 0;
 int thresholdValue = 0;
 
-void gpuDilateAndErode(gpu::GpuMat &input, int dilateSizeFunc, int erodeSizeFunc, int deRepeatFunc); //prototype this one too
+void gpuDilateAndErode(gpu::GpuMat &input, gpu::GpuMat &output, int dilateSizeFunc, int erodeSizeFunc, int deRepeatFunc); //prototype this one too
 
 class gpuClass{
 public: 
 void gpuProcess( Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){
-	Mat displayImageCPU; //create this for showing the filtered image
+	Mat displayImage1;
+	Mat displayImage2; //create this for showing the filtered image
 	gpuInFrame.upload(inProcess); //upload frame to GPU
 
 	gpu::split(gpuInFrame, RGBchannels); //split image into 3 channels
 	addWeightBlue = addWeightIntBlue / 10; //take value from slider and convert to double
 	addWeightRed = addWeightIntRed / 10;
-	gpu::addWeighted(RGBchannels[0],addWeightBlue,RGBchannels[2],addWeightRed,0,BlueAndRed); //add the red and blue channels
-	gpu::subtract(RGBchannels[1],BlueAndRed,gpuOutFrame); //subtract the red and blue from the green
+	//gpu::addWeighted(RGBchannels[0],addWeightBlue,RGBchannels[2],addWeightRed,0,BlueAndRed); //add the red and blue channels
+	gpu::threshold(RGBchannels[2],RGBchannels[2],140,255,0);	
+	gpu::subtract(RGBchannels[1],RGBchannels[2],GreenMinus); //subtract the red from the green	
+	gpu::threshold(GreenMinus,gpuOutFrame,thresholdValue,255,0);
 
-	gpu::threshold(gpuOutFrame,gpuOutFrame,thresholdValue,255,0);
-
-	gpuDilateAndErode(gpuOutFrame,dilateSize,erodeSize, deRepeat); //dilate and erode on gpu
-	gpuOutFrame.download(displayImageCPU);
-	imshow("filtered image", displayImageCPU); //show filtered image
+	gpuDilateAndErode(gpuOutFrame,gpuOutFrame,dilateSize,erodeSize, deRepeat); //dilate and erode on gpu
+	GreenMinus.download(displayImage1);
+	imshow("GreenMinus", displayImage1); //show filtered image
+	gpuOutFrame.download(displayImage2);
+	imshow("gpuOutFrame", displayImage2); //show filtered image
 	waitKey(5);
 
 	vector<Vec3f> cpuCirclesData; //create cpu matrix for circles data
@@ -75,7 +78,7 @@ void gpuProcess( Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){
 	circlesData = cpuCirclesData;
 }
 private:
-gpu::GpuMat gpuInFrame, gpuOutFrame,BlueAndRed; //create gpu matricies to store the image
+gpu::GpuMat gpuInFrame, gpuOutFrame,GreenMinus; //create gpu matricies to store the image
 	gpu::GpuMat gpuCirclesData; //create gpu matrix for cirlces data
 	vector <gpu::GpuMat> RGBchannels; //create vector of gpu matricies to store RGB channels
 
@@ -94,28 +97,30 @@ void dilateAndErode(Mat &input, int dilateSizeFunc, int erodeSizeFunc, int deRep
 		dilate(input, input, dilateElement);
 	}
 }
-void gpuDilateAndErode(gpu::GpuMat &input, int dilateSizeFunc, int erodeSizeFunc, int deRepeatFunc){
+void gpuDilateAndErode(gpu::GpuMat &input, gpu::GpuMat &output, int dilateSizeFunc, int erodeSizeFunc, int deRepeatFunc){
 	//this function dilates and erodes the image, making shapes more defined and removing noise
 	// function below takes the elementSize and gets a structuring element. bigger element means more erosion
 	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(erodeSizeFunc,erodeSizeFunc));
 	Mat dilateElement = getStructuringElement( MORPH_RECT, Size(dilateSizeFunc,dilateSizeFunc));
-
+	gpu::GpuMat dilateTemp;
 	for(int i = 0; i < deRepeatFunc; i++){
-		gpu::erode(input, input, erodeElement);
-		gpu::dilate(input, input, dilateElement);
+		gpu::dilate(input, dilateTemp, dilateElement);
+		gpu::erode(dilateTemp, output, erodeElement);
 	}
 }
 
 void displayCircles(VideoCapture cap, vector<Vec3f> &circlesData,gpuClass &g){
 	clock_t start = clock();
 	Mat inputFrame, outputFrame; //creating variables to store image
-	bool frameIsRead = cap.read(inputFrame); //reads a frame from video and stores boolean value if read correctly
+	bool frameIsRead = true;
+	//cap.read(inputFrame); //reads a frame from video and stores boolean value if read correctly
 	if (!frameIsRead) //check if frame was read
 	{
 		cout << "video was not read successfully" << endl;
 	}
 
-	pyrDown(inputFrame,inputFrame ); //scale image down, makes it easier to process
+	//pyrDown(inputFrame,inputFrame ); //scale image down, makes it easier to process
+	inputFrame = imread("Screenshot.png", CV_LOAD_IMAGE_UNCHANGED);
 	outputFrame = inputFrame; // make a copy for output
 	counter++;
 	if(gpu::getCudaEnabledDeviceCount() != 0){ //checks if a CUDA device is availible
