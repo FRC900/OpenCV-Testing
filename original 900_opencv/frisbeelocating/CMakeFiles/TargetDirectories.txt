@@ -1,0 +1,1 @@
+/home/ubuntu/900_opencv/frisbeelocating/CMakeFiles/frisbeelocating.dir
