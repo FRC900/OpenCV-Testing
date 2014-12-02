@@ -17,7 +17,7 @@
 using namespace cv;
 using namespace std;
 
-int erodeSize = 1;
+int erodeSize = 4;
 int dilateSize = 1;
 int addWeightIntBlue = 10;
 int addWeightIntRed = 10;
@@ -31,7 +31,8 @@ double actualBrightness = 0;
 int trackbarBrightness = 0;
 double actualContrast = 0;
 int trackbarContrast = 0;
-int thresholdValue = 0;
+int thresholdValue = 80;
+int circleSize = 30;
 
 void gpuDilateAndErode(gpu::GpuMat &input, gpu::GpuMat &output, int dilateSizeFunc, int erodeSizeFunc, int deRepeatFunc); //prototype this one too
 
@@ -54,28 +55,31 @@ void gpuProcess( Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){
 	GreenMinus.download(displayImage1);
 	imshow("GreenMinus", displayImage1); //show filtered image
 	gpuOutFrame.download(displayImage2);
+	Mat cpuFrame;
+	vector< vector<Point> > foundContours;
+	gpuOutFrame.download(cpuFrame);
+	findContours(cpuFrame, foundContours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+	double maxCircularity = 0;
+	vector <Point> mostCircular;
+	for(int i = 0; i < foundContours.size(); i++){
+		vector <Point> currentContour;
+		convexHull(foundContours[i], currentContour);
+		double circularity = (4 * M_PI * contourArea(currentContour)) / (arcLength(currentContour,true) * arcLength(currentContour,true));
+		if (circularity > maxCircularity && contourArea(currentContour) > circleSize){
+			maxCircularity = circularity;
+			mostCircular = currentContour;
+		}
+	}
+	if(maxCircularity != 0){
+		Moments M = moments( mostCircular, false);
+		cout << "most circularity: " << maxCircularity << endl;
+		Point2f center(M.m10/M.m00 , M.m01/M.m00);
+		int radius = arcLength(mostCircular, true) / (2 * M_PI);
+		circle(outProcess, center, radius, Scalar(0,255,0), 10);
+	}	
 	imshow("gpuOutFrame", displayImage2); //show filtered image
 	waitKey(5);
-
-	vector<Vec3f> cpuCirclesData; //create cpu matrix for circles data
-	gpu::HoughCircles(gpuOutFrame, gpuCirclesData, CV_HOUGH_GRADIENT,1, 60, 100, 10, 1, 20); //run houghCircles on gpu
-	gpu::HoughCirclesDownload(gpuCirclesData,cpuCirclesData); //download houghcirlces data to cpu
-	for( size_t i = 0; i < cpuCirclesData.size(); i++ )
-	{
-		Point center(cvRound(cpuCirclesData[i][0]), cvRound(cpuCirclesData[i][1]));
-		int radius = cvRound(cpuCirclesData[i][2]);
-		// draw the circle center
-		circle( outProcess, center, 3, Scalar(0,128,128), -1, 8, 0 );
-		// draw the circle outline
-		circle( outProcess, center, radius, Scalar(0,128,128), 3, 8, 0 );
-		
-	}
-
-	//GaussianBlur( frame, out, Size(5,5), 3, 3);
-	//imshow("output", gray); //show the frame in "MyVideo" window
-	//imshow("output",temp ); //show the frame in "MyVideo" window
-
-	circlesData = cpuCirclesData;
+	
 }
 private:
 gpu::GpuMat gpuInFrame, gpuOutFrame,GreenMinus; //create gpu matricies to store the image
@@ -179,6 +183,7 @@ int main()
 	createTrackbar("hough threshold","adjustments", &houghThreshold, 20); //threshold for hough circles detection
 	createTrackbar("brightness","adjustments", &trackbarBrightness, 100);
 	createTrackbar("contrast","adjustments", &trackbarContrast, 100);
+	createTrackbar("circle size","adjustments", &circleSize, 1000);
 	createTrackbar("threshold value","adjustments", &thresholdValue, 255);
 	// loop that runs for every frame until stopped
 
