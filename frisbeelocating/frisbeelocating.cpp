@@ -14,25 +14,28 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include <sys/time.h>
+
+#include "vision_thread.hpp"
+#include "threadsafe_buffer.hpp"
 using namespace cv;
 using namespace std;
 
-int erodeSize = 4;
+int erodeSize = 5;
 int dilateSize = 1;
-int addWeightIntBlue = 10;
-int addWeightIntRed = 10;
-double addWeightBlue = addWeightIntBlue / 10;
-double addWeightRed = addWeightIntRed / 10;
 int deRepeat = 1;
 int houghThreshold = 10;
 int radius = 1;
 int counter = 0;
 double actualBrightness = 0;
-int trackbarBrightness = 0;
+int trackbarBrightness = 1;
 double actualContrast = 0;
-int trackbarContrast = 0;
-int thresholdValue = 80;
+int trackbarContrast = 50;
+int thresholdValueGreen = 88;
+int thresholdValueRed = 155;
 int circleSize = 30;
+int minCircularity = 70;
+int field = 60;
 
 void gpuDilateAndErode(gpu::GpuMat &input, gpu::GpuMat &output, int dilateSizeFunc, int erodeSizeFunc, int deRepeatFunc); //prototype this one too
 
@@ -41,27 +44,25 @@ public:
 void gpuProcess( Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){
 	Mat displayImage1;
 	Mat displayImage2; //create this for showing the filtered image
+	cv::gpu::GpuMat thresh2;
 	gpuInFrame.upload(inProcess); //upload frame to GPU
 
 	gpu::split(gpuInFrame, RGBchannels); //split image into 3 channels
-	addWeightBlue = addWeightIntBlue / 10; //take value from slider and convert to double
-	addWeightRed = addWeightIntRed / 10;
-	//gpu::addWeighted(RGBchannels[0],addWeightBlue,RGBchannels[2],addWeightRed,0,BlueAndRed); //add the red and blue channels
-	gpu::threshold(RGBchannels[2],RGBchannels[2],140,255,0);	
+	gpu::threshold(RGBchannels[2],RGBchannels[2],thresholdValueRed,255,0);	
 	gpu::subtract(RGBchannels[1],RGBchannels[2],GreenMinus); //subtract the red from the green	
-	gpu::threshold(GreenMinus,gpuOutFrame,thresholdValue,255,0);
+	gpu::threshold(GreenMinus,gpuOutFrame,thresholdValueGreen,255,0);
 
 	gpuDilateAndErode(gpuOutFrame,gpuOutFrame,dilateSize,erodeSize, deRepeat); //dilate and erode on gpu
 	GreenMinus.download(displayImage1);
-	imshow("GreenMinus", displayImage1); //show filtered image
+	//imshow("GreenMinus", displayImage1); //show filtered image
 	gpuOutFrame.download(displayImage2);
 	Mat cpuFrame;
 	vector< vector<Point> > foundContours;
 	gpuOutFrame.download(cpuFrame);
 	findContours(cpuFrame, foundContours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-	double maxCircularity = 0;
+	double maxCircularity = minCircularity / 100.00;
 	vector <Point> mostCircular;
-	for(int i = 0; i < foundContours.size(); i++){
+	for(size_t i = 0; i < foundContours.size(); i++){
 		vector <Point> currentContour;
 		convexHull(foundContours[i], currentContour);
 		double circularity = (4 * M_PI * contourArea(currentContour)) / (arcLength(currentContour,true) * arcLength(currentContour,true));
@@ -70,12 +71,14 @@ void gpuProcess( Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){
 			mostCircular = currentContour;
 		}
 	}
-	if(maxCircularity != 0){
+	circlesData.clear();
+	if(maxCircularity > minCircularity / 100.00){
 		Moments M = moments( mostCircular, false);
-		cout << "most circularity: " << maxCircularity << endl;
+		//cout << "most circularity: " << maxCircularity << endl;
 		Point2f center(M.m10/M.m00 , M.m01/M.m00);
 		int radius = arcLength(mostCircular, true) / (2 * M_PI);
 		circle(outProcess, center, radius, Scalar(0,255,0), 10);
+		circlesData.push_back(Vec3f(M.m10/M.m00 , displayImage2.cols , field));
 	}	
 	imshow("gpuOutFrame", displayImage2); //show filtered image
 	waitKey(5);
@@ -114,26 +117,27 @@ void gpuDilateAndErode(gpu::GpuMat &input, gpu::GpuMat &output, int dilateSizeFu
 }
 
 void displayCircles(VideoCapture cap, vector<Vec3f> &circlesData,gpuClass &g){
-	clock_t start = clock();
+	//clock_t start = clock();
 	Mat inputFrame, outputFrame; //creating variables to store image
 	bool frameIsRead = true;
-	//cap.read(inputFrame); //reads a frame from video and stores boolean value if read correctly
+	cap.read(inputFrame); //reads a frame from video and stores boolean value if read correctly
 	if (!frameIsRead) //check if frame was read
 	{
 		cout << "video was not read successfully" << endl;
 	}
 
 	//pyrDown(inputFrame,inputFrame ); //scale image down, makes it easier to process
-	inputFrame = imread("Screenshot.png", CV_LOAD_IMAGE_UNCHANGED);
-	outputFrame = inputFrame; // make a copy for output
+	//inputFrame = imread("Screenshot.png", CV_LOAD_IMAGE_UNCHANGED);
+	outputFrame = inputFrame.clone(); // make a copy for output
 	counter++;
 	if(gpu::getCudaEnabledDeviceCount() != 0){ //checks if a CUDA device is availible
 		g.gpuProcess(inputFrame, outputFrame, circlesData); // calls for the GPU to process the frame
 	}
 	//convert to RGB before displaying output
-	imshow("final image", outputFrame);
-	clock_t t = clock() - start;
-	double secondT = (float(t))/CLOCKS_PER_SEC;
+	//imshow("final image", outputFrame);
+        //waitKey(5);
+	//clock_t t = clock() - start;
+	//double secondT = (float(t))/CLOCKS_PER_SEC;
 	//cout << secondT << endl;
 }
 
@@ -163,8 +167,37 @@ void framesPerSecond(int counter, clock_t startTime)
 */
 
 
-int main()
+double getTimeAsDouble(void)
 {
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return tv.tv_sec + tv.tv_usec/1000000.;
+}
+
+void printFPS(double elapsedTime, double frameCount)
+{
+   double fps = frameCount / elapsedTime;
+   cout << "Processed " << frameCount << " frames in " << elapsedTime << " seconds. " << fps << " frames per second" << endl;
+}
+
+// Convert unsigned int into 4 individual bytes, push them 
+void appendToBuffer(VisionBuf &buf, unsigned int val)
+{
+   buf.push_back(val >> 24);
+   buf.push_back(val >> 16);
+   buf.push_back(val >>  8);
+   buf.push_back(val      );
+}
+const int skipInitialFrames = 10;
+
+void *visionThread(void *data)
+{
+   // Buffer used to share data between threads
+   TSBuffer< VisionBuf > *tsBuffer = ( TSBuffer< VisionBuf > *)data;
+   VisionBuf buf;
+
+   unsigned frameCount = 0;
+   double startTime = getTimeAsDouble();
 	gpuClass g;
 	int dilateSize = 1;
 	//open the video
@@ -172,24 +205,22 @@ int main()
 	//checks if the video opened
 	if ( !cap.isOpened() ){
 		cout << "video was not opened successfully." <<endl;
-		return -1;
+		return NULL;
 	}
 	namedWindow("adjustments",0); //create a new windows for adjusting some variables during runtime
 	createTrackbar("erode element size(pixels)","adjustments", &erodeSize, 10); //slider for erode size
 	createTrackbar("dilate element size(pixels)","adjustments", &dilateSize, 10); //slider for dilate size
-	createTrackbar("blue channel weight(x10)","adjustments", &addWeightIntBlue, 100); //blue channel weight slider
-	createTrackbar("red channel weight(x10)","adjustments", &addWeightIntRed, 100); //red channel weight slider
 	createTrackbar("dilate and erode","adjustments", &deRepeat, 10); //times to repeat dilate and erode
-	createTrackbar("hough threshold","adjustments", &houghThreshold, 20); //threshold for hough circles detection
 	createTrackbar("brightness","adjustments", &trackbarBrightness, 100);
 	createTrackbar("contrast","adjustments", &trackbarContrast, 100);
 	createTrackbar("circle size","adjustments", &circleSize, 1000);
-	createTrackbar("threshold value","adjustments", &thresholdValue, 255);
+	createTrackbar("green threshold value","adjustments", &thresholdValueGreen, 255);
+	createTrackbar("red threshold value","adjustments", &thresholdValueRed, 255);
+	createTrackbar("minimum circularity x 100","adjustments", &minCircularity, 100);
 	// loop that runs for every frame until stopped
 
 	while (true)
 	{
-		
 		actualBrightness = trackbarBrightness;
 		actualBrightness /= 100;
 		actualContrast = trackbarContrast;
@@ -198,9 +229,36 @@ int main()
 		cap.set(CV_CAP_PROP_CONTRAST, actualContrast);
 		vector<Vec3f> xAndY;
 		displayCircles(cap, xAndY, g);
-					
+
+		buf.clear();
+		appendToBuffer(buf, xAndY.size());
+		for (size_t i = 0; i < xAndY.size(); i++)
+		   for (size_t j = 0; j < 3; j++)
+		   {
+		      //cout << unsigned(cvRound(xAndY[i][j])) << " ";
+		      appendToBuffer(buf, unsigned(cvRound(xAndY[i][j])));
+		   }
+		//cout << endl;
+		tsBuffer->Update(buf);
+		//for (size_t i = 0; i < buf.size(); i++)
+		   //cout << (unsigned int)buf[i] << " "; 
+		//cout << endl;
+		// Update frame count - used for generating FPS display
+		frameCount += 1;
+		// Skip over the first few frames since OpenCV has a high
+		// startup cost. Skipping the time for that startup gives
+		// a more accurate reading of the steady-state framerate
+		if (frameCount == skipInitialFrames)
+		   startTime = getTimeAsDouble();
+		// Print FPS every 60 frames
+		else if (((frameCount - skipInitialFrames) % 60) == 0)
+		{
+		   printFPS(getTimeAsDouble() - startTime, frameCount - skipInitialFrames);
+		   // reset frameCount so the start timer is reset on the next frame
+		   frameCount = skipInitialFrames - 1;
+		}
 	}
-	return 0;
+	return NULL;
 }
 
 

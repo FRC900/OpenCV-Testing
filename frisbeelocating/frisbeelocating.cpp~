@@ -70,12 +70,14 @@ void gpuProcess( Mat &inProcess, Mat &outProcess, vector<Vec3f> &circlesData){
 			mostCircular = currentContour;
 		}
 	}
+	circlesData.clear();
 	if(maxCircularity != 0){
 		Moments M = moments( mostCircular, false);
 		cout << "most circularity: " << maxCircularity << endl;
 		Point2f center(M.m10/M.m00 , M.m01/M.m00);
 		int radius = arcLength(mostCircular, true) / (2 * M_PI);
 		circle(outProcess, center, radius, Scalar(0,255,0), 10);
+		circlesData.push_back(Vec3f(M.m10/M.m00 , M.m01/M.m00, radius);
 	}	
 	imshow("gpuOutFrame", displayImage2); //show filtered image
 	waitKey(5);

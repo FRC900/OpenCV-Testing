@@ -1,1 +1,0 @@
-/home/ubuntu/900_opencv/facedetection/CMakeFiles/webcamtest.dir
